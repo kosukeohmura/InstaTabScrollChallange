@@ -9,16 +9,23 @@
 import UIKit
 
 class ViewController: UIViewController {
-
-    enum Content: Equatable {
-        case main(itemCount: Int)
-        case another(itemCount: Int)
+    
+    enum ListType: Int, CaseIterable {
+        case main
+        case another
+        
+        var index: Int { return ListType.allCases.firstIndex(of: self)! }
     }
 
-    var content: Content {
+    var visibleListType: ListType = .main {
         willSet {
-            if content != newValue {
-                collectionView.reloadData()
+            guard visibleListType != newValue else { return }
+            
+            if let tabCell = (collectionView.visibleCells.compactMap { $0 as? TabCell }).first {
+                tabCell.updateHighlightedTab(newValue.index)
+            }
+            if let listsCell = (collectionView.visibleCells.compactMap { $0 as? ContentListsCell }).first {
+                listsCell.changeVisibleList(listType: newValue)
             }
         }
     }
@@ -29,7 +36,6 @@ class ViewController: UIViewController {
     var anotherItemCount = 3
 
     init() {
-        content = .main(itemCount: 50)
         super.init(nibName: nil, bundle: Bundle(for: ViewController.self))
     }
 
@@ -53,47 +59,39 @@ class ViewController: UIViewController {
             view.bottomAnchor.constraint(equalTo: collectionView.bottomAnchor),
             view.trailingAnchor.constraint(equalTo: collectionView.trailingAnchor)])
 
-        collectionView.register(HeaderCell.self, forCellWithReuseIdentifier: "header")
-        collectionView.register(TabCell.self, forCellWithReuseIdentifier: "tab")
-        collectionView.register(ContentCell.self, forCellWithReuseIdentifier: "content")
-        collectionView.register(AnotherContentCell.self, forCellWithReuseIdentifier: "anotherContent")
-    }
-
-    func makeRandomColor() -> UIColor {
-        let ramdomParcentage: CGFloat = ((1..<100).map { CGFloat($0) / 100 }).randomElement()!
-        return UIColor.blue.withAlphaComponent(ramdomParcentage)
+        collectionView.register(HeaderCell.self, forCellWithReuseIdentifier: HeaderCell.self.description())
+        collectionView.register(TabCell.self, forCellWithReuseIdentifier: TabCell.self.description())
+        collectionView.register(ContentListsCell.self, forCellWithReuseIdentifier: ContentListsCell.self.description())
     }
 }
 
 extension ViewController: UICollectionViewDataSource {
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        switch content {
-        case .main(let itemCount): return 2 + itemCount
-        case .another(let itemCount): return 2 + itemCount
-        }
+        return 3
     }
 
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         switch indexPath.row {
         case 0:
-            let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "header", for: indexPath)
+            let cell = collectionView.dequeueReusableCell(withReuseIdentifier: HeaderCell.self.description(), for: indexPath)
             cell.backgroundColor = .lightGray
             return cell
+            
         case 1:
-            let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "tab", for: indexPath) as! TabCell
+            let cell = collectionView.dequeueReusableCell(withReuseIdentifier: TabCell.self.description(), for: indexPath) as! TabCell
             cell.delegate = self
             cell.backgroundColor = .white
             return cell
-        default:
-            let identifier: String = {
-                switch content {
-                case .main: return "content"
-                case .another: return "anotherContent"
-                }
-            }()
-            let cell = collectionView.dequeueReusableCell(withReuseIdentifier: identifier, for: indexPath)
-            cell.backgroundColor = makeRandomColor()
+            
+        case 2:
+            let cell = collectionView.dequeueReusableCell(withReuseIdentifier: ContentListsCell.self.description(), for: indexPath) as! ContentListsCell
+            cell.delegate = self
+            cell.mainItemCount = mainItemCount
+            cell.anotherItemCount = anotherItemCount
             return cell
+            
+        default:
+            fatalError()
         }
     }
 }
@@ -106,23 +104,22 @@ extension ViewController: UICollectionViewDelegateFlowLayout {
         case 1:
             return CGSize(width: collectionView.frame.width, height: 30)
         default:
-            switch content {
-            case .main:
-                let length = collectionView.frame.width / 3 - 8
-                return CGSize(width: length, height: length)
-            case .another:
-                let length = collectionView.frame.width
-                return CGSize(width: length, height: length)
-            }
+            return CGSize(width: collectionView.frame.width, height: collectionView.frame.width - 30)
         }
     }
 }
 
 extension ViewController: TabCellDelegate {
     func leftDidTap(in: TabCell) {
-        content = .main(itemCount: mainItemCount)
+        visibleListType = .main
     }
     func rightDidTap(in: TabCell) {
-        content = .another(itemCount: anotherItemCount)
+        visibleListType = .another
+    }
+}
+
+extension ViewController: ContentListsCellDelegate {
+    func contentListsCell(_ contentListsCell: ContentListsCell, visibleListDidChange listType: ViewController.ListType) {
+        visibleListType = listType
     }
 }

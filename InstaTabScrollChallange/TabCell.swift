@@ -17,6 +17,37 @@ protocol TabCellDelegate: class {
 class TabCell: UICollectionViewCell {
 
     weak var delegate: TabCellDelegate?
+    
+    private let leftButton: UIButton = {
+        let button = UIButton()
+        button.backgroundColor = .green
+        button.setTitle("left", for: .normal)
+        button.translatesAutoresizingMaskIntoConstraints = false
+        return button
+    }()
+    
+    private let rightButton: UIButton = {
+        let button = UIButton()
+        button.backgroundColor = .purple
+        button.setTitle("right", for: .normal)
+        button.translatesAutoresizingMaskIntoConstraints = false
+        return button
+    }()
+    
+    func updateHighlightedTab(_ index: Int) {
+        switch index {
+        case 0:
+            self.leftButton.isHighlighted = true
+            self.rightButton.isHighlighted = false
+            
+        case 1:
+            self.leftButton.isHighlighted = false
+            self.rightButton.isHighlighted = true
+            
+        default:
+            break
+        }
+    }
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -30,19 +61,11 @@ class TabCell: UICollectionViewCell {
             contentView.leadingAnchor.constraint(equalTo: stackView.leadingAnchor),
             contentView.bottomAnchor.constraint(equalTo: stackView.bottomAnchor),
             contentView.trailingAnchor.constraint(equalTo: stackView.trailingAnchor)])
-
-        let leftButton = UIButton()
-        leftButton.backgroundColor = .green
-        leftButton.setTitle("left", for: .normal)
-        leftButton.translatesAutoresizingMaskIntoConstraints = false
+        
         stackView.addArrangedSubview(leftButton)
-        leftButton.addTarget(self, action: #selector(didLeftTap), for: .touchUpInside)
-
-        let rightButton = UIButton()
-        rightButton.backgroundColor = .purple
-        rightButton.setTitle("right", for: .normal)
-        rightButton.translatesAutoresizingMaskIntoConstraints = false
         stackView.addArrangedSubview(rightButton)
+        
+        leftButton.addTarget(self, action: #selector(didLeftTap), for: .touchUpInside)
         rightButton.addTarget(self, action: #selector(didRightTap), for: .touchUpInside)
     }
 
